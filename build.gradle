@@ -1,0 +1,70 @@
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+sourceCompatibility = 1.8
+
+buildscript {
+
+   repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+        mavenCentral()
+    }
+
+   dependencies {
+   }
+}
+
+defaultTasks 'clean', 'uberjar', 'run'
+
+mainClassName = "org.tadivenkat.HelloWorld"
+
+repositories {
+    flatDir { dirs 'lib' } // in case there are any local lib jars not pulled from maven repos
+    maven { url "http://packages.confluent.io/maven/" }  // get confluent only packages
+    maven { url "http://hercules2.arst.hpeswlab.net:8081/repository/internal/" }  // local dependencies  
+    mavenCentral()
+}
+
+dependencies {
+   testCompile 'junit:junit:4.12'
+   // Logging
+   compile group: 'log4j', name: 'log4j', version: '1.2.17'
+   compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
+   compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.13'
+   // Vertica 
+   compile group: 'com.jolbox', name: 'bonecp', version: '0.8.0.RELEASE'
+   compile name: 'vertica-jdbc-7.2.3-0'
+   // Vert.x
+    compile group: 'io.vertx', name: 'vertx-core', version: '3.3.3'  
+    compile group: 'io.vertx', name: 'vertx-web', version: '3.3.3'
+    compile group: 'io.vertx', name: 'vertx-auth-common', version: '3.3.3'
+    compile group: 'io.vertx', name: 'vertx-service-discovery', version: '3.3.3'
+    compile group: 'io.vertx', name: 'vertx-unit', version: '3.3.3'
+    compile group: 'io.vertx', name: 'vertx-codegen', version: '3.3.3'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'org.tadivenkat.HelloWorld'
+    }   
+}
+
+task uberjar(type: Jar, dependsOn:[build]) {
+    manifest {
+        attributes 'Main-Class': 'org.tadivenkat.HelloWorld'
+    }   
+    from files(sourceSets.main.output.classesDir)
+    from files(sourceSets.main.output.resourcesDir)
+    from {configurations.compile.collect {zipTree(it)}} {
+        // When repackaging the jars, exclude signatures 
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+}
+
+task wrapper(type : Wrapper) {
+   gradleVersion = '3.1'
+}
